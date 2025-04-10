@@ -37,7 +37,7 @@ export default function CartPage() {
     });
     
     // Add a phone number where you want to receive enquiries
-    const phoneNumber = "9746791421"; // Replace with your actual WhatsApp business phone number
+    const phoneNumber = "971521527182"; // Replace with your actual WhatsApp business phone number
     
     // Encode the message for a URL
     const encodedMessage = encodeURIComponent(message);
