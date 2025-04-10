@@ -1,16 +1,20 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Outlet } from "react-router-dom";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import toast, { Toaster } from "react-hot-toast";
+import "./app.css";
 
-function App() {
-  const [count, setCount] = useState(0)
-
+const App = () => {
   return (
     <>
-      <h1 className='text-red-500 text-2xl'>Macha happpy ayit irikk njan ille kodee😁❤️</h1>
+      <Header />
+      <main className="pt-5">
+        <Outlet />
+      </main>
+      <Footer />
+      <Toaster position="top-right" reverseOrder={false} />
     </>
-  )
-}
+  );
+};
 
-export default App
+export default App;
