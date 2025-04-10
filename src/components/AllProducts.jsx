@@ -10,6 +10,7 @@ const ProductCard = ({
   description,
   _id,
   category,
+  sku,
 }) => {
   const navigate = useNavigate();
   
@@ -38,7 +39,6 @@ const ProductCard = ({
       </div>
       <div className="mt-2" onClick={handleProductClick} style={{ cursor: 'pointer' }}>
         <h3 className="text-sm font-medium text-gray-900 line-clamp-1">{title}</h3>
-        <p className="text-sm text-gray-500">${price}</p>
         {colors && colors.length > 0 && (
           <div className="flex mt-1 space-x-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
             {colors.map((color, idx) => (
@@ -61,10 +61,54 @@ const AllProducts = ({ filters }) => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage, setProductsPerPage] = useState(12);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchParams, setSearchParams] = useState({});
 
+  // Prepare search parameters when filters change
+  useEffect(() => {
+    const newParams = {};
+    
+    // Handle search term
+    if (filters?.search) {
+      newParams.search = filters.search;
+    }
+    
+    // Handle availability filter
+    if (filters?.availability) {
+      if (filters.availability === "inStock") {
+        newParams.stock = true;
+      } else if (filters.availability === "outOfStock") {
+        newParams.stock = false;
+      }
+    }
+
+    // Handle price filters
+    if (filters?.price?.min) {
+      newParams.minPrice = filters.price.min;
+    }
+    
+    if (filters?.price?.max) {
+      newParams.maxPrice = filters.price.max;
+    }
+    
+    // Handle category filter
+    if (filters?.categories && filters.categories !== "all") {
+      newParams.categoryId = filters.categories;
+    }
+
+    // Handle color filter
+    if (filters?.color && filters.color !== "" && filters.color !== "all") {
+      newParams.color = filters.color;
+    }
+    
+    setSearchParams(newParams);
+    setCurrentPage(1); // Reset to first page on filter change
+  }, [filters]);
+
+  // Fetch products when page, limit, or search params change
   useEffect(() => {
     fetchProducts();
-  }, [filters, currentPage, productsPerPage]);
+  }, [currentPage, productsPerPage, searchParams]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -73,30 +117,8 @@ const AllProducts = ({ filters }) => {
       const apiParams = {
         page: currentPage,
         limit: productsPerPage,
+        ...searchParams
       };
-
-      // Only add stock parameter if availability filter is explicitly set
-      if (filters?.availability) {
-        if (filters.availability === "inStock") {
-          apiParams.stock = true;
-        } else if (filters.availability === "outOfStock") {
-          apiParams.stock = false;
-        }
-      }
-
-      // Only add price parameters if they exist and are not default values
-      if (filters?.price?.min) {
-        apiParams.minPrice = filters.price.min;
-      }
-      
-      if (filters?.price?.max) {
-        apiParams.maxPrice = filters.price.max;
-      }
-
-      // Only add color parameter if it exists and is not a default/empty value
-      if (filters?.color && filters.color !== "" && filters.color !== "all") {
-        apiParams.color = filters.color;
-      }
 
       const response = await getAllProducts(apiParams);
 
@@ -109,25 +131,38 @@ const AllProducts = ({ filters }) => {
       }
 
       setProducts(productData);
-
+      
       // Set total products from pagination info if available
+      let total = 0;
       if (response?.pagination?.total) {
-        setTotalProducts(response.pagination.total);
+        total = response.pagination.total;
       } else if (response?.data?.pagination?.total) {
-        setTotalProducts(response.data.pagination.total);
+        total = response.data.pagination.total;
       } else {
-        setTotalProducts(productData.length);
+        // If no pagination info, estimate based on whether we got a full page
+        total = productData.length < productsPerPage 
+          ? (currentPage - 1) * productsPerPage + productData.length 
+          : currentPage * productsPerPage + 1; // At least one more page
       }
+      
+      setTotalProducts(total);
+      
+      // Calculate and set total pages
+      const pages = Math.ceil(total / productsPerPage);
+      setTotalPages(pages > 0 ? pages : 1);
+
     } catch (error) {
       console.error("Error fetching products:", error);
       setProducts([]);
+      setTotalProducts(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
   };
 
   const handlePageChange = (direction) => {
-    if (direction === "next" && currentPage * productsPerPage < totalProducts) {
+    if (direction === "next" && currentPage < totalPages) {
       setCurrentPage((prev) => prev + 1);
     } else if (direction === "prev" && currentPage > 1) {
       setCurrentPage((prev) => prev - 1);
@@ -138,6 +173,10 @@ const AllProducts = ({ filters }) => {
     setProductsPerPage(value);
     setCurrentPage(1); // Reset to first page when changing items per page
   };
+
+  // Calculate pagination indicators
+  const startIndex = products.length > 0 ? (currentPage - 1) * productsPerPage + 1 : 0;
+  const endIndex = products.length > 0 ? startIndex + products.length - 1 : 0;
 
   return (
     <div className="w-full px-4 max-sm:px-0 lg:px-8 mx-auto max-w-full sm:max-w-[10%] md:max-w-[85%] lg:max-w-[80%]">
@@ -150,6 +189,13 @@ const AllProducts = ({ filters }) => {
               : `${totalProducts} Product`}
           </h2>
         </div>
+        {filters.search && (
+          <div className="bg-[rgba(0,105,180,0.1)] rounded-xl px-3 sm:px-4 py-1">
+            <h2 className="text-[#0069B4] font-semibold text-xs sm:text-sm">
+              Search: "{filters.search}"
+            </h2>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -162,11 +208,13 @@ const AllProducts = ({ filters }) => {
             No products found
           </h3>
           <p className="mt-2 text-xs sm:text-sm text-gray-500">
-            Try adjusting your filters to find products.
+            {filters.search 
+              ? `No results for "${filters.search}". Try a different search term or adjust your filters.`
+              : "Try adjusting your filters to find products."}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-4 max-sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-4 sm:gap-x-4 md:gap-x-5 lg:gap-x-6 mt-6 sm:mt-8 md:mt-12">
+        <div className="grid grid-cols-3 max-sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-x-3 gap-y-4 sm:gap-x-4 md:gap-x-5 lg:gap-x-6 mt-6 sm:mt-8 md:mt-12">
           {Array.isArray(products) ? (
             products.map((product) => (
               <ProductCard key={product._id} {...product} />
@@ -185,7 +233,11 @@ const AllProducts = ({ filters }) => {
       )}
 
       {products && products.length > 0 && (
-        <div className="flex flex-col sm:flex-row justify-center sm:justify-end items-center mt-6 sm:mt-8 mb-4 gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 sm:mt-8 mb-4 gap-4">
+          <div className="text-xs sm:text-sm text-gray-500">
+            Showing {startIndex}-{endIndex} of {totalProducts} products
+          </div>
+          
           <div className="flex items-center gap-2">
             {/* Pagination Controls */}
             <button
@@ -213,6 +265,11 @@ const AllProducts = ({ filters }) => {
                 />
               </svg>
             </button>
+
+            {/* Page indicator */}
+            <div className="text-xs sm:text-sm font-medium">
+              {currentPage} of {totalPages}
+            </div>
 
             {/* Items per page selector */}
             <div className="flex items-center gap-2">
@@ -250,16 +307,16 @@ const AllProducts = ({ filters }) => {
 
             <button
               className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border flex items-center justify-center ${
-                currentPage * productsPerPage < totalProducts
+                currentPage < totalPages
                   ? "border-black cursor-pointer"
                   : "border-[#E6E6E6] cursor-not-allowed"
               }`}
               onClick={() => handlePageChange("next")}
-              disabled={currentPage * productsPerPage >= totalProducts}
+              disabled={currentPage >= totalPages}
             >
               <svg
                 className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                  currentPage * productsPerPage < totalProducts
+                  currentPage < totalPages
                     ? "text-black"
                     : "text-[#E6E6E6]"
                 }`}

@@ -9,6 +9,9 @@ export default {
         'inter': ['Inter', 'sans-serif'],
         'poppins': ['Poppins', 'sans-serif'],
       },
+      server: {
+        port: 3001,
+      },
     },
   },
   plugins: [],

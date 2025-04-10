@@ -19,6 +19,7 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
     price: { min: "", max: "" },
     categories: "all", // 'all' or specific category ID
     color: "all", // 'all' or specific color name
+    search: "", // New search filter
   });
 
   // Data states
@@ -27,9 +28,46 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
   const [stockStatus, setStockStatus] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Search states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredCategories, setFilteredCategories] = useState([]);
+  const [filteredColors, setFilteredColors] = useState([]);
+
   useEffect(() => {
     fetchFilterData();
   }, []);
+
+  // Effect to filter options based on search term
+  useEffect(() => {
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+
+      // Filter categories based on search term
+      const matchedCategories = categories.filter(
+        (cat) => cat.id === "all" || cat.name.toLowerCase().includes(term)
+      );
+      setFilteredCategories(matchedCategories);
+
+      // Filter colors based on search term
+      const matchedColors = colors.filter(
+        (color) => color.id === "all" || color.name.toLowerCase().includes(term)
+      );
+      setFilteredColors(matchedColors);
+
+      // Auto-expand sections that have matching items
+      if (matchedCategories.length > 1) {
+        setExpandedSections((prev) => ({ ...prev, categories: true }));
+      }
+
+      if (matchedColors.length > 1) {
+        setExpandedSections((prev) => ({ ...prev, color: true }));
+      }
+    } else {
+      // If no search term, show all options
+      setFilteredCategories(categories);
+      setFilteredColors(colors);
+    }
+  }, [searchTerm, categories, colors]);
 
   // Fetch filter data from the unified endpoint
   const fetchFilterData = async () => {
@@ -78,6 +116,8 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
 
       setCategories(formattedCategories);
       setColors(formattedColors);
+      setFilteredCategories(formattedCategories);
+      setFilteredColors(formattedColors);
       setStockStatus([
         {
           id: "all",
@@ -92,6 +132,8 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
       setCategories([{ id: "all", name: "All", count: 0 }]);
       setColors([{ id: "all", name: "All", color: "", count: 0 }]);
       setStockStatus([{ id: "all", name: "All", count: 0 }]);
+      setFilteredCategories([{ id: "all", name: "All", count: 0 }]);
+      setFilteredColors([{ id: "all", name: "All", color: "", count: 0 }]);
     } finally {
       setLoading(false);
     }
@@ -107,13 +149,37 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
 
   // Handle checkbox change
   const handleFilterChange = (filterType, value) => {
+    // Create a new object to avoid direct mutation
     const updatedFilters = {
       ...filters,
       [filterType]: value,
     };
 
+    // Update local state
     setFilters(updatedFilters);
+
+    // Notify parent component of the change
     onFilterChange(updatedFilters);
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    // Update the search term in filters and notify parent component
+    const updatedFilters = {
+      ...filters,
+      search: value,
+    };
+
+    setFilters(updatedFilters);
+
+    // Debounce search to avoid too many API calls
+    clearTimeout(window.searchTimeout);
+    window.searchTimeout = setTimeout(() => {
+      onFilterChange(updatedFilters);
+    }, 500);
   };
 
   // Handle price input change
@@ -141,9 +207,11 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
       price: { min: "", max: "" },
       categories: "all",
       color: "all",
+      search: "",
     };
 
     setFilters(resetFilters);
+    setSearchTerm("");
     onFilterChange(resetFilters);
   };
 
@@ -252,6 +320,14 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
       });
     }
 
+    if (filters.search) {
+      applied.push({
+        type: "search",
+        id: "searchTerm",
+        name: `"${filters.search}"`,
+      });
+    }
+
     return applied;
   };
 
@@ -294,8 +370,33 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
           <input
             type="text"
             className="pl-10 pr-4 py-2 w-full border-none bg-[#FFFFFF] rounded-lg text-md outline-none focus:outline-none focus:ring-0"
-            placeholder="Search filters"
+            placeholder="Search Filters"
+            value={searchTerm}
+            onChange={handleSearchChange}
           />
+          {searchTerm && (
+            <div
+              className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+              onClick={() => {
+                setSearchTerm("");
+                handleFilterChange("search", "");
+              }}
+            >
+              <svg
+                className="h-4 w-4 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </div>
+          )}
         </div>
       </div>
 
@@ -308,7 +409,7 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
             {stockStatus.map((status) => (
               <div
                 key={status.id}
-                className="flex items-center justify-between mb-2"
+                className="flex items-center justify-between mb-2 p-1"
               >
                 <div className="flex items-center">
                   <Checkbox
@@ -317,7 +418,7 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
                       handleFilterChange("availability", status.id)
                     }
                   />
-                  <span>{status.name}</span>
+                  <span className="text-sm">{status.name}</span>
                 </div>
                 <span className="text-sm text-gray-500">{status.count}</span>
               </div>
@@ -326,47 +427,17 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
         )}
       </div>
 
-      {/* Price Filter */}
-      <div className="mb-4">
-        <FilterSectionHeader title="Price (AED)" section="price" />
-
-        {expandedSections.price && (
-          <div className="mt-2">
-            <div className="flex justify-between mb-2">
-              <span className="text-gray-500">Min</span>
-              <span className="text-gray-500">Max</span>
-            </div>
-            <div className="flex justify-between">
-              <input
-                type="text"
-                className="w-20 mr-2 px-3 py-1 border-none bg-[#FFFBF7] rounded-lg text-md outline-none focus:outline-none focus:ring-0"
-                placeholder="200"
-                value={filters.price.min}
-                onChange={(e) => handlePriceChange("min", e.target.value)}
-              />
-              <input
-                type="text"
-                className="w-20 px-3 py-1 border-none bg-[#FFFBF7] rounded-lg text-md outline-none focus:outline-none focus:ring-0"
-                placeholder="500"
-                value={filters.price.max}
-                onChange={(e) => handlePriceChange("max", e.target.value)}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Categories Filter */}
-      {categories.length > 1 && (
+      {filteredCategories.length > 1 && (
         <div className="mb-4">
           <FilterSectionHeader title="Categories" section="categories" />
 
           {expandedSections.categories && (
             <div className="mt-2 max-h-60 overflow-y-auto">
-              {categories.map((category) => (
+              {filteredCategories.map((category) => (
                 <div
                   key={category.id}
-                  className="flex items-center justify-between mb-2"
+                  className="flex items-center justify-between mb-2 p-1"
                 >
                   <div className="flex items-center">
                     <Checkbox
@@ -375,7 +446,7 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
                         handleFilterChange("categories", category.id)
                       }
                     />
-                    <span className="truncate">{category.name}</span>
+                    <span className="truncate text-sm">{category.name}</span>
                   </div>
                   <span className="text-sm text-gray-500 ml-1 flex-shrink-0">
                     {category.count}
@@ -388,18 +459,18 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
       )}
 
       {/* Color Filter */}
-      {colors.length > 1 && (
+      {filteredColors.length > 1 && (
         <div className="mb-4">
           <FilterSectionHeader title="Color" section="color" />
 
           {expandedSections.color && (
-            <div className="mt-2 max-h-60 overflow-y-auto">
-              {colors.map((color) => (
+            <div className="mt-2 overflow-y-auto">
+              {filteredColors.map((color) => (
                 <div
                   key={color.id}
-                  className="flex items-center justify-between mb-2"
+                  className="flex items-center justify-between"
                 >
-                  <div className="flex items-center">
+                  <div className="flex items-center mb-2 p-1">
                     <Checkbox
                       selected={filters.color === color.id}
                       onClick={() => handleFilterChange("color", color.id)}
@@ -407,7 +478,7 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
                     />
                     <span
                       className={`truncate ${
-                        filters.color === color.id ? "font-medium" : ""
+                        filters.color === color.id ? "text-sm" : "text-sm"
                       }`}
                     >
                       {color.name}
@@ -453,7 +524,15 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
-                    onClick={() => handleFilterChange(filter.type, "all")}
+                    onClick={() => {
+                      if (filter.type === "search") {
+                        setSearchTerm("");
+                      }
+                      handleFilterChange(
+                        filter.type,
+                        filter.type === "search" ? "" : "all"
+                      );
+                    }}
                   >
                     <path
                       strokeLinecap="round"

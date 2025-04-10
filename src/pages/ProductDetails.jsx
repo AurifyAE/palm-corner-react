@@ -61,7 +61,7 @@ const ImageCarousel = ({ images }) => {
         modules={[Thumbs]}
         ref={mainSwiperRef}
         onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
-        className="mb-4 bg-[#BFBEBE] rounded-3xl p-4 h-96 max-sm:h-86"
+        className="mb-4 bg-[#E9E9E9] rounded-3xl p-4 h-96 max-sm:h-86"
       >
         {images.map((image, index) => (
           <SwiperSlide
@@ -116,16 +116,16 @@ const ImageCarousel = ({ images }) => {
                 slidesPerView: 3,
               },
               768: {
-                slidesPerView: 4,
+                slidesPerView: 3,
               },
               1024: {
                 slidesPerView: 4,
               },
               1280: {
-                slidesPerView: 5,
+                slidesPerView: 4,
               },
               1600: {
-                slidesPerView: 6,
+                slidesPerView: 4,
               },
             }}
             freeMode={true}
@@ -486,7 +486,7 @@ const ProductDetail = () => {
 
       <div className="flex flex-col md:flex-row gap-8">
         {/* Product Images Section */}
-        <div className="md:w-1/2">
+        <div className="md:w-[35%]">
           <ImageCarousel images={selectedColorImages} />
         </div>
 
@@ -499,7 +499,7 @@ const ProductDetail = () => {
             SKU: {product.sku}
           </p>
           <p className="text-lg sm:text-xl font-medium text-[#F7941E] mb-4">
-            ${product.price.toFixed(2)}
+            {/* AED {product.price.toFixed(2)} */}
           </p>
 
           {/* Stock Status */}

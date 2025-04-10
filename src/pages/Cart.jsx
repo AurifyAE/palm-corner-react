@@ -11,7 +11,7 @@ export default function CartPage() {
       localStorage.getItem("cartItems") || "[]"
     );
     setCartItems(savedCartItems);
-    console.log(savedCartItems)
+    console.log(savedCartItems);
   }, []);
 
   const handleDelete = (index) => {
@@ -23,7 +23,32 @@ export default function CartPage() {
   };
 
   const handleEnquire = () => {
-    toast.success("Your request has been submitted");
+    // Format cart items for WhatsApp message
+    let message = "Hello, I would like to enquire about the following items:\n\n";
+    
+    cartItems.forEach((item, index) => {
+      message += `${index + 1}. Product: ${item.title}\n`;
+      message += `   SKU: ${item.sku}\n`;
+      message += `   Quantity: ${item.quantity}\n`;
+      if (item.colorName) {
+        message += `   Color: ${item.colorName}\n`;
+      }
+      message += "\n";
+    });
+    
+    // Add a phone number where you want to receive enquiries
+    const phoneNumber = "9746791421"; // Replace with your actual WhatsApp business phone number
+    
+    // Encode the message for a URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Create WhatsApp link
+    const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+    
+    // Open WhatsApp in a new tab
+    window.open(whatsappLink, "_blank");
+    
+    toast.success("Opening WhatsApp to send your enquiry");
   };
 
   return (

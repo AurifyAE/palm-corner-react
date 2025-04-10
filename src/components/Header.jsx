@@ -120,7 +120,7 @@ const Header = () => {
             >
               About Us
               {isAboutHovered && (
-                <div className="absolute top-full left-0 mt-2 w-56 bg-[#F9B462] p-5 rounded-b-[15%] shadow-lg z-50">
+                <div className="absolute top-full left-0 mt-2 w-72 bg-[#F7941E]/40 backdrop-blur-md p-6 rounded-b-[15%] shadow-lg z-50">
                   <p className="text-[14px] text-black whitespace-pre-line">
                     {aboutContent}
                   </p>
@@ -134,7 +134,7 @@ const Header = () => {
             >
               Contact Us
               {isContactHovered && (
-                <div className="absolute top-full left-0 mt-2 w-56 bg-[#F9B462] p-5 rounded-b-[15%] shadow-lg z-50">
+                <div className="absolute top-full left-0 mt-2 w-60 bg-[#F7941E]/40 backdrop-blur-md p-6 rounded-b-[15%] shadow-lg z-50">
                   <p className="text-[14px] text-black font-semibold whitespace-pre-line">
                     {contactContent}
                   </p>
