@@ -13,7 +13,6 @@ const ProductCard = ({
   sku,
 }) => {
   const navigate = useNavigate();
-  
   // Get default color and its images
   const defaultColor = colors?.find((color) => color.isDefault) || colors?.[0];
   const defaultImage =
@@ -44,7 +43,7 @@ const ProductCard = ({
             {colors.map((color, idx) => (
               <div
                 key={idx}
-                className="w-5 h-5 sm:w-6 sm:h-6 rounded-full cursor-pointer mb-1"
+                className="w-5 h-5 sm:w-6 sm:h-6 rounded-full cursor-pointer mb-1 border-1 border-gray-300"
                 style={{ backgroundColor: color.hexCode }}
               />
             ))}
@@ -72,7 +71,8 @@ const AllProducts = ({ filters }) => {
     if (filters?.search) {
       newParams.search = filters.search;
     }
-    
+    console.log(filters)
+
     // Handle availability filter
     if (filters?.availability) {
       if (filters.availability === "inStock") {
@@ -90,7 +90,7 @@ const AllProducts = ({ filters }) => {
     if (filters?.price?.max) {
       newParams.maxPrice = filters.price.max;
     }
-    
+
     // Handle category filter
     if (filters?.categories && filters.categories !== "all") {
       newParams.categoryId = filters.categories;

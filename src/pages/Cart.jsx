@@ -2,17 +2,82 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Delete as DeleteIcon } from "@mui/icons-material";
 import toast, { Toaster } from "react-hot-toast";
+import { getProductDetails } from "../api/api";
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedCartItems = JSON.parse(
-      localStorage.getItem("cartItems") || "[]"
-    );
-    setCartItems(savedCartItems);
-    console.log(savedCartItems);
+    const loadCartItems = async () => {
+      try {
+        // Retrieve cart items from localStorage
+        const savedCartItems = JSON.parse(localStorage.getItem("cartItems") || "[]");
+        
+        if (savedCartItems.length === 0) {
+          setCartItems([]);
+          setLoading(false);
+          return;
+        }
+
+        // Check each product's availability via API
+        const availableItems = await checkProductsAvailability(savedCartItems);
+        
+        // Update cart with only available products
+        setCartItems(availableItems);
+        
+        // If some items were unavailable, update localStorage
+        if (availableItems.length !== savedCartItems.length) {
+          localStorage.setItem("cartItems", JSON.stringify(availableItems));
+          window.dispatchEvent(new Event("cartUpdated"));
+          toast.error("Some items in your cart are no longer available");
+        }
+      } catch (error) {
+        console.error("Error loading cart items:", error);
+        toast.error("Error checking product availability");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCartItems();
   }, []);
+
+  // Function to check product availability through API using individual product endpoints
+  const checkProductsAvailability = async (items) => {
+    try {
+      // Create an array of promises to check each product
+      const availabilityPromises = items.map(async (item) => {
+        try {
+          // Call the individual product endpoint
+          const response = await getProductDetails(item.productId);
+          
+          // If the API call succeeds, the product exists and is available
+          return {
+            ...item,
+            isAvailable: true
+          };
+        } catch (error) {
+          // If API call fails, product is unavailable
+          console.log(`Product ${item.title} (ID: ${item.productId}) is no longer available`);
+          return {
+            ...item,
+            isAvailable: false
+          };
+        }
+      });
+
+      // Wait for all product checks to complete
+      const checkedItems = await Promise.all(availabilityPromises);
+      
+      // Filter out unavailable products
+      return checkedItems.filter(item => item.isAvailable);
+    } catch (error) {
+      console.error("Error in batch checking product availability:", error);
+      // Return original items if overall process fails
+      return items;
+    }
+  };
 
   const handleDelete = (index) => {
     const newCartItems = cartItems.filter((_, i) => i !== index);
@@ -37,7 +102,7 @@ export default function CartPage() {
     });
     
     // Add a phone number where you want to receive enquiries
-    const phoneNumber = "971521527182"; // Replace with your actual WhatsApp business phone number
+    const phoneNumber = "+971521527182";
     
     // Encode the message for a URL
     const encodedMessage = encodeURIComponent(message);
@@ -53,7 +118,6 @@ export default function CartPage() {
 
   return (
     <div className="max-w-[80%] max-sm:max-w-[100%] mt-24 max-sm:mt-5 mx-auto max-sm:px-6 lg:px-8 pt-20 pb-16 min-h-screen">
-      <Toaster position="top-center" reverseOrder={false} />
       
       {/* Cart Header */}
       <div className="flex items-center justify-between mb-6 border-b border-gray-300 pb-3">
@@ -63,7 +127,12 @@ export default function CartPage() {
         </h2>
       </div>
 
-      {cartItems.length > 0 ? (
+      {loading ? (
+        <div className="text-center py-16">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-gray-600">Checking product availability...</p>
+        </div>
+      ) : cartItems.length > 0 ? (
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="w-full">
             {/* Desktop Table */}

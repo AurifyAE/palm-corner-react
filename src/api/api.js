@@ -34,6 +34,7 @@ export const getAllProducts = ({
     maxPrice,
     stock,
     color,
+    categoryId,
     page,
     limit
 } = {}) => {
@@ -43,6 +44,7 @@ export const getAllProducts = ({
             maxPrice,
             stock,
             color,
+            category:categoryId,
             page,
             limit
         }

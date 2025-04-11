@@ -94,6 +94,8 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
         })),
       ];
 
+      // console.log(formattedCategories)
+
       // Format colors data
       const formattedColors = [
         {
