@@ -35,6 +35,7 @@ export const getAllProducts = ({
     stock,
     color,
     categoryId,
+    search,
     page,
     limit
 } = {}) => {
@@ -43,8 +44,9 @@ export const getAllProducts = ({
             minPrice,
             maxPrice,
             stock,
+            category: categoryId,
+            search,
             color,
-            category:categoryId,
             page,
             limit
         }

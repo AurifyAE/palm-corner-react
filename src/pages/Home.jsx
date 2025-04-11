@@ -15,6 +15,7 @@ const Home = () => {
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
+    console.log(filters)
     // console.log("Applied filters:", newFilters);
   };
 
