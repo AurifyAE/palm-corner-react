@@ -21,7 +21,6 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
     color: "all", // 'all' or specific color name
     search: "", // New search filter
   });
-
   // Data states
   const [categories, setCategories] = useState([]);
   const [colors, setColors] = useState([]);
@@ -148,16 +147,23 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
   };
 
   // Handle checkbox change
-  const handleFilterChange = (filterType, value) => {
+  const handleFilterChange = (filterType, value, displayName = null) => {
     // Create a new object to avoid direct mutation
     const updatedFilters = {
       ...filters,
       [filterType]: value,
     };
-
+  
+    // For categories, store both the ID and the display name
+    if (filterType === "categories" && value !== "all") {
+      updatedFilters.categoryName = displayName || value;
+    } else if (filterType === "categories" && value === "all") {
+      updatedFilters.categoryName = null; // Clear the name when "all" is selected
+    }
+  
     // Update local state
     setFilters(updatedFilters);
-
+  
     // Notify parent component of the change
     onFilterChange(updatedFilters);
   };
@@ -443,7 +449,7 @@ export default function FiltersSidebar({ onFilterChange, className = "" }) {
                     <Checkbox
                       selected={filters.categories === category.id}
                       onClick={() =>
-                        handleFilterChange("categories", category.id)
+                        handleFilterChange("categories", category.id, category.name)
                       }
                     />
                     <span className="truncate text-sm">{category.name}</span>

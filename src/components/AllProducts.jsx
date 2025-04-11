@@ -13,7 +13,7 @@ const ProductCard = ({
   sku,
 }) => {
   const navigate = useNavigate();
-  
+
   // Get default color and its images
   const defaultColor = colors?.find((color) => color.isDefault) || colors?.[0];
   const defaultImage =
@@ -27,7 +27,7 @@ const ProductCard = ({
 
   return (
     <div className="relative mb-8 sm:mb-10 md:mb-12 w-full">
-      <div 
+      <div
         className="bg-white p-3 sm:p-4 flex items-center justify-center h-64 max-sm:h-52 md:h-80 w-full rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer"
         onClick={handleProductClick}
       >
@@ -37,10 +37,19 @@ const ProductCard = ({
           className="max-h-40 sm:max-h-48 md:max-h-52 object-contain"
         />
       </div>
-      <div className="mt-2" onClick={handleProductClick} style={{ cursor: 'pointer' }}>
-        <h3 className="text-sm font-medium text-gray-900 line-clamp-1">{title}</h3>
+      <div
+        className="mt-2"
+        onClick={handleProductClick}
+        style={{ cursor: "pointer" }}
+      >
+        <h3 className="text-sm font-medium text-gray-900 line-clamp-1">
+          {title}
+        </h3>
         {colors && colors.length > 0 && (
-          <div className="flex mt-1 space-x-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex mt-1 space-x-2 flex-wrap"
+            onClick={(e) => e.stopPropagation()}
+          >
             {colors.map((color, idx) => (
               <div
                 key={idx}
@@ -67,12 +76,12 @@ const AllProducts = ({ filters }) => {
   // Prepare search parameters when filters change
   useEffect(() => {
     const newParams = {};
-    
+
     // Handle search term
     if (filters?.search) {
       newParams.search = filters.search;
     }
-    
+
     // Handle availability filter
     if (filters?.availability) {
       if (filters.availability === "inStock") {
@@ -86,21 +95,29 @@ const AllProducts = ({ filters }) => {
     if (filters?.price?.min) {
       newParams.minPrice = filters.price.min;
     }
-    
+
     if (filters?.price?.max) {
       newParams.maxPrice = filters.price.max;
     }
-    
-    // Handle category filter
+
+    // Fix: Handle category filter - adapt based on what API expects
     if (filters?.categories && filters.categories !== "all") {
+      // Try with categoryId first (most likely what the API expects)
       newParams.categoryId = filters.categories;
+
+      // Alternative parameter names - uncomment if needed based on API
+      // newParams.category = filters.categories;  // Or just "category"
+      // newParams.category_id = filters.categories;  // Or with underscore
     }
 
     // Handle color filter
     if (filters?.color && filters.color !== "" && filters.color !== "all") {
       newParams.color = filters.color;
     }
-    
+
+    console.log("Applied filters:", filters);
+    console.log("Search params for API:", newParams);
+
     setSearchParams(newParams);
     setCurrentPage(1); // Reset to first page on filter change
   }, [filters]);
@@ -117,10 +134,14 @@ const AllProducts = ({ filters }) => {
       const apiParams = {
         page: currentPage,
         limit: productsPerPage,
-        ...searchParams
+        ...searchParams,
+        search: searchParams.search,
       };
 
+      console.log("Sending API request with params:", apiParams);
+
       const response = await getAllProducts(apiParams);
+      console.log("API response:", response);
 
       // Check the structure of the response and extract products correctly
       let productData = [];
@@ -131,7 +152,7 @@ const AllProducts = ({ filters }) => {
       }
 
       setProducts(productData);
-      
+
       // Set total products from pagination info if available
       let total = 0;
       if (response?.pagination?.total) {
@@ -140,17 +161,17 @@ const AllProducts = ({ filters }) => {
         total = response.data.pagination.total;
       } else {
         // If no pagination info, estimate based on whether we got a full page
-        total = productData.length < productsPerPage 
-          ? (currentPage - 1) * productsPerPage + productData.length 
-          : currentPage * productsPerPage + 1; // At least one more page
+        total =
+          productData.length < productsPerPage
+            ? (currentPage - 1) * productsPerPage + productData.length
+            : currentPage * productsPerPage + 1; // At least one more page
       }
-      
+
       setTotalProducts(total);
-      
+
       // Calculate and set total pages
       const pages = Math.ceil(total / productsPerPage);
       setTotalPages(pages > 0 ? pages : 1);
-
     } catch (error) {
       console.error("Error fetching products:", error);
       setProducts([]);
@@ -175,7 +196,8 @@ const AllProducts = ({ filters }) => {
   };
 
   // Calculate pagination indicators
-  const startIndex = products.length > 0 ? (currentPage - 1) * productsPerPage + 1 : 0;
+  const startIndex =
+    products.length > 0 ? (currentPage - 1) * productsPerPage + 1 : 0;
   const endIndex = products.length > 0 ? startIndex + products.length - 1 : 0;
 
   return (
@@ -196,6 +218,13 @@ const AllProducts = ({ filters }) => {
             </h2>
           </div>
         )}
+        {filters.categories && filters.categories !== "all" && (
+          <div className="bg-[rgba(0,105,180,0.1)] rounded-xl px-3 sm:px-4 py-1">
+            <h2 className="text-[#0069B4] font-semibold text-xs sm:text-sm">
+              Category: {filters.categoryName || filters.categories}
+            </h2>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -208,7 +237,7 @@ const AllProducts = ({ filters }) => {
             No products found
           </h3>
           <p className="mt-2 text-xs sm:text-sm text-gray-500">
-            {filters.search 
+            {filters.search
               ? `No results for "${filters.search}". Try a different search term or adjust your filters.`
               : "Try adjusting your filters to find products."}
           </p>
@@ -237,7 +266,7 @@ const AllProducts = ({ filters }) => {
           <div className="text-xs sm:text-sm text-gray-500">
             Showing {startIndex}-{endIndex} of {totalProducts} products
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Pagination Controls */}
             <button
@@ -316,9 +345,7 @@ const AllProducts = ({ filters }) => {
             >
               <svg
                 className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                  currentPage < totalPages
-                    ? "text-black"
-                    : "text-[#E6E6E6]"
+                  currentPage < totalPages ? "text-black" : "text-[#E6E6E6]"
                 }`}
                 fill="none"
                 viewBox="0 0 24 24"
