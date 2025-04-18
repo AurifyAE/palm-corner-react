@@ -115,8 +115,8 @@ const AllProducts = ({ filters }) => {
       newParams.color = filters.color;
     }
 
-    console.log("Applied filters:", filters);
-    console.log("Search params for API:", newParams);
+    // console.log("Applied filters:", filters);
+    // console.log("Search params for API:", newParams);
 
     setSearchParams(newParams);
     setCurrentPage(1); // Reset to first page on filter change
@@ -138,10 +138,10 @@ const AllProducts = ({ filters }) => {
         search: searchParams.search,
       };
 
-      console.log("Sending API request with params:", apiParams);
+      // console.log("Sending API request with params:", apiParams);
 
       const response = await getAllProducts(apiParams);
-      console.log("API response:", response);
+      // console.log("API response:", response);
 
       // Check the structure of the response and extract products correctly
       let productData = [];
