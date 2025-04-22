@@ -102,7 +102,7 @@ export default function CartPage() {
     });
     
     // Add a phone number where you want to receive enquiries
-    const phoneNumber = "+971521527182";
+    const phoneNumber = "971507330747";
     
     // Encode the message for a URL
     const encodedMessage = encodeURIComponent(message);
