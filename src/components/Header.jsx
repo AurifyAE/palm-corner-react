@@ -56,7 +56,7 @@ const Header = () => {
     Sharjah, UAE.
 
     +971 653 66 706, 
-    info@palmcornerevents.com`;
+    info@palmcorneruae.ae`;
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
